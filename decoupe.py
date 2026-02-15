@@ -4,6 +4,16 @@ from minigeo.stl import facettes_stl_binaire
 from minigeo.affichable import affiche
 from minigeo.utils import multiples_entre
 
+def z_min_z_max(facettes):
+    z_min, z_max = facettes[0].zmin_et_zmax()
+    for i in range(1,len(facettes)):
+        z_min_current, z_max_current = facettes[i].zmin_et_zmax()
+        if z_min_current < z_min:
+            z_min = z_min_current
+        
+        if z_max_current > z_max:
+            z_max = z_max_current
+    return z_min, z_max
 
 def decoupe(facettes, epaisseur):
     """
@@ -12,7 +22,10 @@ def decoupe(facettes, epaisseur):
     le vecteur externe contient toutes les coupes de tranches de la plus basse (x minimal)
     a la plus haute (x maximal).
     """
-    pass
+    z_min, z_max = z_min_z_max(facettes)
+    tuple_multiples = multiples_entre(z_min, z_max, epaisseur)
+    
+
 
 
 def main():
