@@ -15,6 +15,22 @@ def z_min_z_max(facettes):
             z_max = z_max_current
     return z_min, z_max
 
+def construire_segment_tranches(facettes, tuple_multiples) :
+    """
+    Renvoie un vecteur qui contient des vecteurs de segment 
+    pour chaque hauteur parmis les multiples de l'epaisseur
+    """
+    list_segment_tranche = []
+    for hauteur in tuple_multiples:
+        list_segment = []
+        for facette in facettes:
+            tup = facette.intersection_plan_horizontal(hauteur)
+            if tup == ():
+                continue
+            list_segment.append(tup[0])
+        list_segment_tranche.append(list_segment)
+    return list_segment_tranche
+
 def decoupe(facettes, epaisseur):
     """
     renvoie un vecteur de vecteurs de segments.
@@ -23,10 +39,8 @@ def decoupe(facettes, epaisseur):
     a la plus haute (x maximal).
     """
     z_min, z_max = z_min_z_max(facettes)
-    tuple_multiples = multiples_entre(z_min, z_max, epaisseur)
-    
-
-
+    tuple_multiples = list(multiples_entre(z_min, z_max, epaisseur))
+    return construire_segment_tranches(facettes,tuple_multiples)
 
 def main():
     if len(argv) != 3:
