@@ -8,94 +8,94 @@ from minigeo.polygone import construction_polygones
 from minigeo.classification import arbre_inclusion
 
 
-# def bornes_z_globales(facettes):
-#     """
-#     Calcule les bornes globales (z_min, z_max) parmi toutes les facettes.
+def bornes_z_globales(facettes):
+    """
+    Calcule les bornes globales (z_min, z_max) parmi toutes les facettes.
 
-#     Paramètre:
-#     - facettes: list [Facette]
+    Paramètre:
+    - facettes: list [Facette]
 
-#     Retour:
-#     - (z_min_global, z_max_global): tuple (float, float)
+    Retour:
+    - (z_min_global, z_max_global): tuple (float, float)
 
-#     Complexité:
-#     - Temps: O(N) où N = nombre de facettes.
-#     """
-#     z_min_global, z_max_global = facettes[0].zmin_et_zmax()
-#     for facette in facettes[1:]:
-#         z_min, z_max = facette.zmin_et_zmax()
-#         if z_min < z_min_global:
-#             z_min_global = z_min
-#         if z_max > z_max_global:
-#             z_max_global = z_max
-#     return z_min_global, z_max_global
-
-
-# def construire_tranches(facettes, hauteurs_coupe, epaisseur, indice_par_hauteur):
-#     """
-#     Construit toutes les tranches (segments 2D) pour des plans z = hauteur.
-
-#     Paramètres:
-#     - facettes: list [Facette]
-#     - hauteurs_coupe: list [float], toutes les hauteurs z à traiter (triées).
-#     - epaisseur: float, pas en z (distance entre deux tranches).
-#     - indice_par_hauteur: dict[float, int], map hauteur -> index dans hauteurs_coupe.
-
-#     Retour:
-#     - tranches: list[list[Segment]], tranches[i] = segments 2D à z = hauteurs_coupe[i].
-
-#     Complexité:
-#     - Temps: O(N*H) au pire, où N = nb facettes et H = nb tranches,
-#       car une facette peut être testée contre beaucoup de hauteurs. 
-#     """
-#     tranches = [[] for _ in range(len(hauteurs_coupe))]
-
-#     for facette in facettes:
-#         z_min, z_max = facette.zmin_et_zmax()
-#         for hauteur in multiples_entre(z_min, z_max, epaisseur):
-#             intersection = facette.intersection_plan_horizontal(hauteur)
-#             if intersection == ():
-#                 continue
-
-#             segment_2d = intersection[0]
-#             tranches[indice_par_hauteur[hauteur]].append(segment_2d)
-
-#     return tranches
+    Complexité:
+    - Temps: O(N) où N = nombre de facettes.
+    """
+    z_min_global, z_max_global = facettes[0].zmin_et_zmax()
+    for facette in facettes[1:]:
+        z_min, z_max = facette.zmin_et_zmax()
+        if z_min < z_min_global:
+            z_min_global = z_min
+        if z_max > z_max_global:
+            z_max_global = z_max
+    return z_min_global, z_max_global
 
 
-# def decoupe(facettes, epaisseur):
-#     """
-#     Découpe un ensemble de facettes 3D en tranches horizontales z = k*epaisseur.
+def construire_tranches(facettes, hauteurs_coupe, epaisseur, indice_par_hauteur):
+    """
+    Construit toutes les tranches (segments 2D) pour des plans z = hauteur.
 
-#     Paramètres:
-#     - facettes: list[Facette]
-#     - epaisseur: float
+    Paramètres:
+    - facettes: list [Facette]
+    - hauteurs_coupe: list [float], toutes les hauteurs z à traiter (triées).
+    - epaisseur: float, pas en z (distance entre deux tranches).
+    - indice_par_hauteur: dict[float, int], map hauteur -> index dans hauteurs_coupe.
 
-#     Retour:
-#     - list[list[Segment]]: une liste de tranches (de la plus basse à la plus haute).
+    Retour:
+    - tranches: list[list[Segment]], tranches[i] = segments 2D à z = hauteurs_coupe[i].
 
-#     Complexité (directe):
-#     - Temps: O(N*H) au pire, avec
-#       N = nb facettes, H ≈ (z_max_global - z_min_global)/epaisseur.  
-#     """
-#     z_min_global, z_max_global = bornes_z_globales(facettes)
+    Complexité:
+    - Temps: O(N*H) au pire, où N = nb facettes et H = nb tranches,
+      car une facette peut être testée contre beaucoup de hauteurs. 
+    """
+    tranches = [[] for _ in range(len(hauteurs_coupe))]
 
-#     hauteurs_coupe = list(multiples_entre(z_min_global, z_max_global, epaisseur))
-#     indice_par_hauteur = {hauteurs_coupe[i]: i for i in range(len(hauteurs_coupe))}
+    for facette in facettes:
+        z_min, z_max = facette.zmin_et_zmax()
+        for hauteur in multiples_entre(z_min, z_max, epaisseur):
+            intersection = facette.intersection_plan_horizontal(hauteur)
+            if intersection == ():
+                continue
 
-#     return construire_tranches(facettes, hauteurs_coupe, epaisseur, indice_par_hauteur)
+            segment_2d = intersection[0]
+            tranches[indice_par_hauteur[hauteur]].append(segment_2d)
 
-# un algo un peu lent pour la decoupe
-def decoupe(facettes, epaisseur):
-    zmin = min(z for f in facettes for _, _, z in f.points)
-    zmax = max(z for f in facettes for _, _, z in f.points)
-    tranches = []
-    for hauteur in multiples_entre(zmin, zmax, epaisseur):
-        facettes_tranche = []
-        for facette in facettes:
-            facettes_tranche.extend(facette.intersection_plan_horizontal(hauteur))
-        tranches.append(facettes_tranche)
     return tranches
+
+
+def decoupe(facettes, epaisseur):
+    """
+    Découpe un ensemble de facettes 3D en tranches horizontales z = k*epaisseur.
+
+    Paramètres:
+    - facettes: list[Facette]
+    - epaisseur: float
+
+    Retour:
+    - list[list[Segment]]: une liste de tranches (de la plus basse à la plus haute).
+
+    Complexité (directe):
+    - Temps: O(N*H) au pire, avec
+      N = nb facettes, H ≈ (z_max_global - z_min_global)/epaisseur.  
+    """
+    z_min_global, z_max_global = bornes_z_globales(facettes)
+
+    hauteurs_coupe = list(multiples_entre(z_min_global, z_max_global, epaisseur))
+    indice_par_hauteur = {hauteurs_coupe[i]: i for i in range(len(hauteurs_coupe))}
+
+    return construire_tranches(facettes, hauteurs_coupe, epaisseur, indice_par_hauteur)
+
+# # un algo un peu lent pour la decoupe
+# def decoupe(facettes, epaisseur):
+#     zmin = min(z for f in facettes for _, _, z in f.points)
+#     zmax = max(z for f in facettes for _, _, z in f.points)
+#     tranches = []
+#     for hauteur in multiples_entre(zmin, zmax, epaisseur):
+#         facettes_tranche = []
+#         for facette in facettes:
+#             facettes_tranche.extend(facette.intersection_plan_horizontal(hauteur))
+#         tranches.append(facettes_tranche)
+#     return tranches
 
 
 def traitement_tranche(segments):
