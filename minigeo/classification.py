@@ -5,7 +5,7 @@ from minigeo.affichable import affiche
 class Noeud:
     def __init__(self, contenu):
         self.contenu = contenu
-        self.enfants = []
+        self.fils = []
 
     def affichage(self):
         """
@@ -13,10 +13,41 @@ class Noeud:
         """
         pass
 
-class Arbre:
-    def __init__(self,racine):
-        self.racine = racine
-        
+"""
+- construire un dico avec {polygone : poly qui contiennent polygone}
+- si polygone : []  donc c'est le fils de "PLAN"
+- sinon : trouver le plus petit polygone parmis les poly (son pere)
+    pour pouvoir constuire un dicà = {polygone : son pere}
+"""
+# def construire_hash(polygones):
+#     hash_polygones = {polygone:[] for polygone in polygones}
+#     for cle in polygones:
+#         for contient_cle in polygones:
+#             if contient_cle != cle and contient_cle.contient(cle):
+#                 hash_polygones[cle].append(contient_cle)
+#     return hash_polygones
+
+def construire_hash(polygones):
+    hash_polygones = {polygone:None for polygone in polygones}
+
+    for cle in polygones:
+        for contient_cle in polygones:
+            if contient_cle == cle :
+                continue # on skip quand ca compare le meme poly
+
+            if contient_cle.contient(cle) and hash_polygones[cle] is None:
+                hash_polygones[cle] = contient_cle # pour initialiser le premier potentiel parent
+                continue 
+
+            if contient_cle.contient(cle) and hash_polygones[cle].contient(contient_cle):
+                hash_polygones[cle] = contient_cle # on a trouver plus petit
+        if hash_polygones[cle] is None :
+            hash_polygones[cle] = "PLAN"
+    return hash_polygones
+
+
+# ----------------- fin des fonctions auxiliaire --------------------------------------
+
 def arbre_inclusion(polygones):
     """
     prend un ensemble de polygones qui ne s'intersectent pas (hormis sur leur bord).
@@ -24,57 +55,16 @@ def arbre_inclusion(polygones):
     pre-condition: pas de doublons, pas d'intersections hors bordures.
     """
     racine = Noeud("PLAN")
-    arbre = Arbre(racine)
-    arbre_inclusion_iter(racine,polygones)
-    pass
+    hash_polygones = construire_hash(polygones)
+    # j'ai maintenant un dictionnaire fils : pere
+    inclusion_rec(racine,hash_polygones)
+    return racine
 
-def arbre_inclusion_iter(noeud,polygones):
-    """
-    construit les fils de la racine en mettant des polygones comme contenu des 
-    noeuds
-    """
-    if noeud is None:
-        return
-
-    pass
-
-def est_maximal(poly,polygones):
-    for polygone in polygones:
-        if polygone != poly and polygone.contient(poly) :
-            return False
-    return True
-
-"""
-- construire un dico avec {polygone : poly qui contiennent polygone}
-- si polygone : []  donc c'est le fils de "PLAN"
-- sinon : trouver le plus petit polygone parmis les poly (son pere)
-    pour pouvoir constuire un dicà = {polygone : son pere}
-"""
-def construire_hash(polygones):
-    hash_polygones = {polygone:[] for polygone in polygones}
-    for cle in polygones:
-        for contient_cle in polygones:
-            if contient_cle != cle and contient_cle.contient(cle):
-                hash_polygones[cle].append(contient_cle)
-    return hash_polygones
-
-def associer_pere(poly_fils, hash_polygones):
-    if hash_polygones[poly_fils] == [] :
-        hash_polygones[poly_fils] = "PLAN"
-        return 
-    hash_polygones[poly_fils] = trouver_plus_petit_poly(hash_polygones[poly_fils])
-     
-
-def trouver_plus_petit_poly(polygones):
-    for poly_petit in polygones:
-        petit = True
-        for contient_petit in polygones:
-            if poly_petit != contient_petit and not contient_petit.contient(poly_petit) :
-                petit = False
-                break
-        if petit : return poly_petit
-    return None 
-    # n'arrivera jamais vu que les polygones ne s'intersectent pas donc il existe un petit
+    
+def inclusion_rec(noeud,hash_polygones):
+    noeud.fils = [Noeud(cle) for cle, valeur in hash_polygones.items() if valeur == noeud.contenu]
+    for fils in noeud.fils:
+        inclusion_rec(fils,hash_polygones)
 
 
 def main():
