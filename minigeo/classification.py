@@ -20,7 +20,7 @@ class Noeud:
             afficher_noeud_fils(self, f)
             f.write("}")
         system("dot -Tpng arbre.dot -o arbre.png")
-        system(f"kitty +kitten icat arbre.png")
+        system("kitty +kitten icat arbre.png")
 
 
 # Parcourt récursivement l'arbre et écrit les arêtes parent -> fils dans le fichier .dot.
@@ -28,8 +28,9 @@ def afficher_noeud_fils(noeud, f):
     for fils in noeud.fils:
         if noeud.contenu == "PLAN":
             f.write(f"nPLAN -> n{id(fils.contenu)};\n")
-            continue
-        f.write(f"n{id(noeud.contenu)} -> n{id(fils.contenu)};\n")
+        else:
+            f.write(f"n{id(noeud.contenu)} -> n{id(fils.contenu)};\n")
+
     for fils in noeud.fils:
         afficher_noeud_fils(fils, f)
 
@@ -39,19 +40,23 @@ def afficher_noeud_fils(noeud, f):
 def construire_hash(polygones):
     hash_polygones = {polygone: None for polygone in polygones}
 
-    for cle in polygones:
-        for contient_cle in polygones:
-            if contient_cle == cle:
-                continue  # on skip quand ca compare le meme poly
+    for fils in polygones:
+        for candidat in polygones:
+            if candidat == fils:
+                continue  # on ignore le cas où on compare le même polygone
 
-            if contient_cle.contient(cle) and hash_polygones[cle] is None:
-                hash_polygones[cle] = contient_cle  # premier père possible
+            contient = candidat.contient(fils)
+
+            if contient and hash_polygones[fils] is None:
+                hash_polygones[fils] = candidat  # premier père possible
                 continue
 
-            if contient_cle.contient(cle) and hash_polygones[cle].contient(contient_cle):
-                hash_polygones[cle] = contient_cle  # on a trouvé un père plus proche
-        if hash_polygones[cle] is None:
-            hash_polygones[cle] = "PLAN"
+            if contient and hash_polygones[fils].contient(candidat):
+                hash_polygones[fils] = candidat  # on a trouvé un père plus proche
+
+        if hash_polygones[fils] is None:
+            hash_polygones[fils] = "PLAN"
+
     return hash_polygones
 
 
@@ -64,26 +69,28 @@ def arbre_inclusion(polygones):
     """
     racine = Noeud("PLAN")
     hash_polygones = construire_hash(polygones)
-    # j'ai maintenant un dictionnaire fils : pere
+    # On dispose maintenant d'un dictionnaire fils -> père.
     inclusion_rec(racine, hash_polygones)
     return racine
 
 
 # Ajoute récursivement à chaque noeud tous ses fils directs.
 def inclusion_rec(noeud, hash_polygones):
-    noeud.fils = [Noeud(cle) for cle, valeur in hash_polygones.items() if valeur == noeud.contenu]
+    noeud.fils = [Noeud(fils) for fils, pere in hash_polygones.items() if pere == noeud.contenu]
+
     for fils in noeud.fils:
         inclusion_rec(fils, hash_polygones)
 
 
-# Petit test local avec des carrés emboîtés et un carré isolé.
 def main():
     p1 = Polygone.carre((0, 0), 10)
     p2 = Polygone.carre((0, 0), 8)
     p3 = Polygone.carre((-2, -2), 2)
     p4 = Polygone.carre((2, 2), 1)
     p5 = Polygone.carre((15, 15), 5)
+
     polygones = [p1, p4, p3, p2, p5]
+
     affiche(*polygones)
     racine = arbre_inclusion(polygones)
     racine.affichage()
