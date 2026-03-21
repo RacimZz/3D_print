@@ -105,6 +105,7 @@ def traitement_tranche(segments):
     print(f"on a {len(polygones)} polygones")
     affiche(polygones)
     hierarchie = arbre_inclusion(polygones)
+    print(hierarchie)
     hierarchie.affichage()
 
 

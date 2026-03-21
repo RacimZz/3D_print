@@ -1,6 +1,6 @@
 from minigeo.polygone import Polygone
 from minigeo.affichable import affiche
-
+from os import system
 
 class Noeud:
     def __init__(self, contenu):
@@ -11,22 +11,31 @@ class Noeud:
         """
         creation d'un fichier dot, conversion en png et affichage dans kitty
         """
-        pass
 
+        with open("arbre.dot","w",encoding="utf-8") as f:
+            f.write("digraph g {\n")
+            afficher_noeud_fils(self,f)
+            f.write("}")
+        system("dot -Tpng arbre.dot -o arbre.png")
+        system(f"kitty +kitten icat arbre.png")
+
+        
+
+
+def afficher_noeud_fils(noeud,f):
+    for fils in noeud.fils:
+        if noeud.contenu == "PLAN":
+            f.write(f"nPLAN -> n{id(fils.contenu)};\n")
+            continue
+        f.write(f"n{id(noeud.contenu)} -> n{id(fils.contenu)};\n")
+    for fils in noeud.fils:
+        afficher_noeud_fils(fils,f)
 """
 - construire un dico avec {polygone : poly qui contiennent polygone}
 - si polygone : []  donc c'est le fils de "PLAN"
 - sinon : trouver le plus petit polygone parmis les poly (son pere)
     pour pouvoir constuire un dicà = {polygone : son pere}
 """
-# def construire_hash(polygones):
-#     hash_polygones = {polygone:[] for polygone in polygones}
-#     for cle in polygones:
-#         for contient_cle in polygones:
-#             if contient_cle != cle and contient_cle.contient(cle):
-#                 hash_polygones[cle].append(contient_cle)
-#     return hash_polygones
-
 def construire_hash(polygones):
     hash_polygones = {polygone:None for polygone in polygones}
 
