@@ -4,63 +4,46 @@ from os import system
 
 
 class Noeud:
-    # Représente un noeud de l'arbre d'inclusion.
-    # Le contenu est soit "PLAN", soit un polygone.
     def __init__(self, contenu):
         self.contenu = contenu
-        self.fils = []
+        self.enfants = []
 
-    # Génère le fichier .dot, le convertit en .png puis l'affiche.
+    def affiche_dot(self, dot):
+        nom = "PLAN" if isinstance(self.contenu, str) else f"n{id(self.contenu)}"
+        for fils in self.enfants:
+            print(f"{nom} -> n{id(fils.contenu)};", file=dot)
+            fils.affiche_dot(dot)
+
     def affichage(self):
         """
         creation d'un fichier dot, conversion en png et affichage dans kitty
         """
-        with open("arbre.dot", "w", encoding="utf-8") as f:
-            f.write("digraph g {\n")
-            afficher_noeud_fils(self, f)
-            f.write("}")
-        system("dot -Tpng arbre.dot -o arbre.png")
-        system("kitty +kitten icat arbre.png")
+        with open("test.dot", "w") as dot:
+            print("digraph g {", file=dot)
+            self.affiche_dot(dot)
+            print("}", file=dot)
+        system("dot -Tpng test.dot -o test.png")
+        system("kitty +kitten icat test.png")
 
-
-# Parcourt récursivement l'arbre et écrit les arêtes parent -> fils dans le fichier .dot.
-def afficher_noeud_fils(noeud, f):
-    for fils in noeud.fils:
-        if noeud.contenu == "PLAN":
-            f.write(f"nPLAN -> n{id(fils.contenu)};\n")
+    def ajout_polygone(self, poly):
+        for fils in self.enfants:
+            if fils.contenu.contient(poly):
+                fils.ajout_polygone(poly)
+                break
         else:
-            f.write(f"n{id(noeud.contenu)} -> n{id(fils.contenu)};\n")
-
-    for fils in noeud.fils:
-        afficher_noeud_fils(fils, f)
-
-
-# Construit un dictionnaire {fils : père direct}.
-# Si un polygone n'a pas de père, on lui associe "PLAN".
-def construire_hash(polygones):
-    hash_polygones = {polygone: None for polygone in polygones}
-
-    for fils in polygones:
-        for candidat in polygones:
-            if candidat == fils:
-                continue  # on ignore le cas où on compare le même polygone
-
-            contient = candidat.contient(fils)
-
-            if contient and hash_polygones[fils] is None:
-                hash_polygones[fils] = candidat  # premier père possible
-                continue
-
-            if contient and hash_polygones[fils].contient(candidat):
-                hash_polygones[fils] = candidat  # on a trouvé un père plus proche
-
-        if hash_polygones[fils] is None:
-            hash_polygones[fils] = "PLAN"
-
-    return hash_polygones
+            fils_restants = []
+            fils_contenus = []
+            for fils in self.enfants:
+                if poly.contient(fils.contenu):
+                    fils_contenus.append(fils)
+                else:
+                    fils_restants.append(fils)
+            nouveau_fils = Noeud(poly)
+            nouveau_fils.enfants = fils_contenus
+            self.enfants = fils_restants
+            self.enfants.append(nouveau_fils)
 
 
-# Construit l'arbre d'inclusion à partir d'un ensemble de polygones.
 def arbre_inclusion(polygones):
     """
     prend un ensemble de polygones qui ne s'intersectent pas (hormis sur leur bord).
@@ -68,18 +51,9 @@ def arbre_inclusion(polygones):
     pre-condition: pas de doublons, pas d'intersections hors bordures.
     """
     racine = Noeud("PLAN")
-    hash_polygones = construire_hash(polygones)
-    # On dispose maintenant d'un dictionnaire fils -> père.
-    inclusion_rec(racine, hash_polygones)
+    for poly in polygones:
+        racine.ajout_polygone(poly)
     return racine
-
-
-# Ajoute récursivement à chaque noeud tous ses fils directs.
-def inclusion_rec(noeud, hash_polygones):
-    noeud.fils = [Noeud(fils) for fils, pere in hash_polygones.items() if pere == noeud.contenu]
-
-    for fils in noeud.fils:
-        inclusion_rec(fils, hash_polygones)
 
 
 def main():
@@ -88,9 +62,7 @@ def main():
     p3 = Polygone.carre((-2, -2), 2)
     p4 = Polygone.carre((2, 2), 1)
     p5 = Polygone.carre((15, 15), 5)
-
     polygones = [p1, p4, p3, p2, p5]
-
     affiche(*polygones)
     racine = arbre_inclusion(polygones)
     racine.affichage()
