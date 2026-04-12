@@ -2,7 +2,7 @@ import minigeo.point
 from minigeo.affichable import affiche
 from minigeo.segment import Segment
 from minigeo.segment import produit_croix
-from minigeo.utils import fenetre_tournante
+from minigeo.utils import fenetre_tournante, multiples_entre
 from collections import defaultdict
 from itertools import chain, pairwise
 from functools import reduce
@@ -13,6 +13,23 @@ class Polygone:
     def __init__(self, points):
         self.points = points
         assert len(self.points) >= 3
+
+    def detection_points_decoupes(self, lignes, ecartement):
+        for s1, s2 in fenetre_tournante(self.segments()):
+            x1, _ = s1.debut
+            x2, _ = s1.fin
+            x3, _ = s2.fin
+            xmin, xmax = (x1, x2) if x1 < x2 else (x2, x1)
+            for x in multiples_entre(xmin, xmax, ecartement):
+                if x == x1:
+                    continue
+                if isclose(x, x2):
+                    # on saute les points qui rebroussent chemin
+                    if (x < x1) == (x < x3):
+                        continue
+                y_intersection = s1.intersection_droite_verticale(x)
+                if y_intersection is not None:
+                    lignes[x].append((x, y_intersection))
 
     @classmethod
     def carre(cls, centre, cote):
